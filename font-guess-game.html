@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Guesser Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&family=Georgia&family=Playfair+Display&family=Roboto&family=Source+Code+Pro&family=Ubuntu&family=Caveat&family=Inconsolata&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Font Guesser</h1>
+        <p class="subtitle">Guess the font of the displayed sentence</p>
+
+        <div class="score">
+            <div class="score-item">
+                <span class="score-label">Correct</span>
+                <div class="score-value" id="correctScore">0</div>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Total</span>
+                <div class="score-value" id="totalScore">0</div>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Streak</span>
+                <div class="score-value" id="streakScore">0</div>
+            </div>
+        </div>
+
+        <div class="game-section">
+            <span class="label">What font is this?</span>
+            <div class="sentence-display">
+                <div class="sentence" id="displaySentence"></div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="guessInput" placeholder="Enter the font name..." autocomplete="off">
+            <button onclick="checkGuess()">Submit</button>
+        </div>
+
+        <div class="button-group">
+            <button class="skip-btn" onclick="skipRound()"> ⏭ Skip</button>
+        </div>
+
+        <div class="hint-text" id="hintText"></div>
+
+        <div class="result-message" id="resultMessage"></div>
+
+        <div class="font-list">
+            <strong>Available fonts:</strong><br>
+            <span id="fontList"></span>
+        </div>
+    </div>
+
+    <script>
+        const fonts = [
+            { name: 'Roboto', family: 'Roboto, sans-serif' },
+            { name: 'Georgia', family: 'Georgia, serif' },
+            { name: 'Courier Prime', family: 'Courier Prime, monospace' },
+            { name: 'Playfair Display', family: 'Playfair Display, serif' },
+            { name: 'Source Code Pro', family: 'Source Code Pro, monospace' },
+            { name: 'Ubuntu', family: 'Ubuntu, sans-serif' },
+            { name: 'Caveat', family: 'Caveat, cursive' },
+            { name: 'Inconsolata', family: 'Inconsolata, monospace' },
+            { name: 'Lora', family: 'Lora, serif' },
+            { name: 'Merriweather', family: 'Merriweather, serif' },
+            { name: 'Poppins', family: 'Poppins, sans-serif' },
+            { name: 'Fira Code', family: 'Fira Code, monospace' },
+            { name: 'Dancing Script', family: 'Dancing Script, cursive' },
+            { name: 'Oswald', family: 'Oswald, sans-serif' },
+            { name: 'PT Mono', family: 'PT Mono, monospace' },
+            { name: 'Amatic SC', family: 'Amatic SC, cursive' },
+            { name: 'Nunito', family: 'Nunito, sans-serif' },
+            { name: 'Raleway', family: 'Raleway, sans-serif' },
+            { name: 'Zilla Slab', family: 'Zilla Slab, serif' },
+            { name: 'Vollkorn', family: 'Vollkorn, serif' },
+            { name: 'Architects Daughter', family: 'Architects Daughter, cursive' },
+            { name: 'Lobster', family: 'Lobster, cursive' },
+            { name: 'Indie Flower', family: 'Indie Flower, cursive' },
+            { name: 'Baskervville', family: 'Baskervville, serif' },
+            { name: 'Rubik', family: 'Rubik, sans-serif' },
+            { name: 'Work Sans', family: 'Work Sans, sans-serif' },
+            { name: 'Cousine', family: 'Cousine, monospace' },
+            { name: 'Satisfy', family: 'Satisfy, cursive' },
+            { name: 'Josefin Sans', family: 'Josefin Sans, sans-serif' },
+            { name: 'Cabin', family: 'Cabin, sans-serif' },
+            { name: 'Exo 2', family: 'Exo 2, sans-serif' },
+            { name: 'Hind', family: 'Hind, sans-serif' },
+            { name: 'Muli', family: 'Muli, sans-serif' },
+            { name: 'Quicksand', family: 'Quicksand, sans-serif' },
+            { name: 'Titillium Web', family: 'Titillium Web, sans' }
+        ];
+
+        const sentences = [
+            'The quick brown fox jumps over the lazy dog.',
+            'Design is not just what it looks like and feels like.',
+            'Address of the deep sea.',
+            'Birth of a dying star.',
+            'Simplicity is the ultimate sophistication.',
+            'A phantom, ephemeral and prone to vanishing, like facing a mirror.',
+            'At the edge of the universe.',
+            'Bleeding is the sincerest form of honesty.'
+        ];
+
+        let currentFont = null;
+        let correctCount = 0;
+        let totalCount = 0;
+        let streakCount = 0;
+        let guessCount = 0;
+        let maxGuesses = 3;
+        let hintLetters = new Set();
+        let hintCount = 0;
+
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function generateFontList() {
+            const fontNames = fonts.map(f => f.name).join(', ');
+            document.getElementById('fontList').textContent = fontNames;
+        }
+
+        function newRound() {
+            currentFont = getRandomItem(fonts);
+            const sentence = getRandomItem(sentences);
+            
+            const displayElement = document.getElementById('displaySentence');
+            displayElement.textContent = sentence;
+            displayElement.style.fontFamily = currentFont.family;
+
+            document.getElementById('guessInput').value = '';
+            document.getElementById('resultMessage').classList.remove('show', 'correct', 'incorrect');
+            document.getElementById('hintText').classList.remove('show');
+            document.getElementById('guessInput').focus();
+            guessCount = 0;
+            hintCount = 0;
+            hintLetters = new Set();
+            // Automatically show hint after round starts
+            setTimeout(showHint, 100);
+        }
+
+        function checkGuess() {
+            const guess = document.getElementById('guessInput').value.trim();
+            
+            if (!guess) {
+                showMessage('Please enter a font name!', false);
+                return;
+            }
+
+            guessCount++;
+            const isCorrect = guess.toLowerCase() === currentFont.name.toLowerCase();
+
+            if (isCorrect) {
+                totalCount++;
+                correctCount++;
+                streakCount++;
+                showMessage(`Correct! It's ${currentFont.name}!`, true);
+                updateScore();
+                setTimeout(newRound, 2500);
+            } else if (guessCount >= maxGuesses) {
+                totalCount++;
+                streakCount = 0;
+                showMessage(`Out of guesses! The font was ${currentFont.name}.`, false);
+                updateScore();
+                setTimeout(newRound, 2500);
+            } else {
+                showMessage(`Wrong! You have ${maxGuesses - guessCount} guess(es) left.`, false);
+                showHint();
+            }
+        }
+
+        function showMessage(message, isCorrect) {
+            const resultElement = document.getElementById('resultMessage');
+            resultElement.textContent = message;
+            resultElement.classList.add('show');
+            resultElement.classList.toggle('correct', isCorrect);
+            resultElement.classList.toggle('incorrect', !isCorrect);
+        }
+
+        function updateScore() {
+            document.getElementById('correctScore').textContent = correctCount;
+            document.getElementById('totalScore').textContent = totalCount;
+            document.getElementById('streakScore').textContent = streakCount;
+        }
+
+        function generateProgressiveHint() {
+            const fontName = currentFont.name;
+            const nameLength = fontName.length;
+            
+            // Determine how many letters to reveal based on hint count
+            const revealMap = {
+                0: Math.ceil(nameLength * 0.1),  // 30% on first hint
+                1: Math.ceil(nameLength * 0.3),  // 60% on second hint
+                2: Math.ceil(nameLength * 0.5)   // 60% on second hint
+
+            };
+            
+            const targetReveals = revealMap[hintCount] || nameLength;
+            
+            // Add more random positions to hint letters
+            while (hintLetters.size < targetReveals) {
+                const randomPos = Math.floor(Math.random() * nameLength);
+                hintLetters.add(randomPos);
+            }
+            
+            // Build hint pattern
+            let hintPattern = '';
+            for (let i = 0; i < nameLength; i++) {
+                if (hintLetters.has(i)) {
+                    hintPattern += fontName[i];
+                } else {
+                    hintPattern += '_';
+                }
+            }
+            
+            return hintPattern;
+        }
+
+        function showHint() {
+            const hintElement = document.getElementById('hintText');
+            const hintPattern = generateProgressiveHint();
+            hintElement.textContent = '💡 Hint: ' + hintPattern;
+            hintElement.classList.add('show');
+            hintCount++;
+        }
+
+        function skipRound() {
+            totalCount++;
+            streakCount = 0;
+            updateScore();
+            showMessage(`Skipped! The font was ${currentFont.name}.`, false);
+            setTimeout(newRound, 2000);
+        }
+
+        // Keyboard support
+        document.getElementById('guessInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkGuess();
+            }
+        });
+
+        // Start the game
+        generateFontList();
+        newRound();
+        updateScore();
+    </script>
+</body>
+</html>
